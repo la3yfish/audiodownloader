@@ -1,0 +1,30 @@
+{
+  "download": {
+    "format": "bestaudio/best",
+    "quiet": false,
+    "force_title": true,
+    "no_playlist": true,
+    "prefer_ffmpeg": true
+  },
+  "audio": {
+    "codec": "mp3",
+    "quality": "320",
+    "sample_rate": "48000"
+  },
+  "paths": {
+    "links_file": "links.txt",
+    "output_dir": "d:/mp3_yt-dlp",
+    "log_file": "audiodownloader.log"
+  },
+  "behavior": {
+    "skip_existing": true,
+    "update_links_file": true,
+    "progress_update_interval": 1.0
+  },
+  "logging": {
+    "level": "INFO",
+    "console_level": "INFO",
+    "format": "%(asctime)s - %(levelname)s - %(message)s",
+    "date_format": "%Y-%m-%d %H:%M:%S"
+  }
+}
