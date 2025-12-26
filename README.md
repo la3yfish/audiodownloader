@@ -104,7 +104,6 @@ The `config.json` file allows you to customize the downloader behavior:
   },
   "behavior": {
     "skip_existing": true,
-    "progress_update_interval": 1.0,
     "quiet_download": true
   },
   "logging": {
@@ -164,3 +163,4 @@ This project is open source. Feel free to use and modify.
 ## Credits
 
 Built with [yt-dlp](https://github.com/yt-dlp/yt-dlp) - a fork of youtube-dl.
+
