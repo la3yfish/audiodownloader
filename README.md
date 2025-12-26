@@ -125,7 +125,6 @@ The `config.json` file allows you to customize the downloader behavior:
 - **paths.output_dir**: Directory for downloaded files
 - **paths.log_file**: Path to the log file
 - **behavior.skip_existing**: Skip downloads if file already exists
-- **behavior.progress_update_interval**: Interval in seconds for progress updates
 - **behavior.quiet_download**: If true, suppress most console output during download
 - **logging.level**: Logging level for file (DEBUG, INFO, WARNING, ERROR)
 - **logging.console_level**: Logging level for console (DEBUG, INFO, WARNING, ERROR)

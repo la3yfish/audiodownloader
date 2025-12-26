@@ -11,7 +11,6 @@
   },
   "behavior": {
     "skip_existing": true,
-    "progress_update_interval": 1.0,
     "quiet_download": true
   },
   "logging": {

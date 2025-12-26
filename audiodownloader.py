@@ -2,7 +2,6 @@ import argparse
 import os
 import logging
 import json
-from datetime import datetime
 import yt_dlp
 from yt_dlp.utils import DownloadError, ExtractorError
 
@@ -42,8 +41,7 @@ def get_default_config():
         },
         "behavior": {
             "skip_existing": True,
-            "progress_update_interval": 1.0,
-            "quiet_download": False
+            "quiet_download": True
         },
         "logging": {
             "level": "INFO",
@@ -113,7 +111,7 @@ class DownloadProgress:
     def __init__(self, url, config):
         self.url = url
         self.last_progress = 0
-        self.update_interval = config['behavior']['progress_update_interval']
+        self.update_interval = 1.0
 
     def progress_hook(self, d):
         if d['status'] == 'downloading':
@@ -204,6 +202,15 @@ def download_audio(url, config):
                     logging.info(f"Duration: {duration:.2f} seconds")
                 if filesize:
                     logging.info(f"File size: {filesize / (1024*1024):.2f} MB")
+
+                # Log original audio quality or resampled info
+                original_abr = info_dict.get('abr')
+                original_asr = info_dict.get('asr')
+
+                if original_abr is not None and original_asr is not None:
+                    logging.info(f"Original audio quality: {original_abr}kbps {original_asr}Hz")
+                else:
+                    logging.info(f"Resampled to: {config['audio']['quality']}kbps {config['audio']['sample_rate']}Hz")
                 return title
             else:
                 logging.error(f"No info extracted for: {url}")
