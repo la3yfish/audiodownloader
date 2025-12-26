@@ -1,4 +1,4 @@
-# Audio Downloader v0.3
+# Audio Downloader v0.31
 
 A command-line tool for downloading audio from various platforms (YouTube, SoundCloud, etc.) with advanced configuration options.
 
@@ -7,14 +7,16 @@ A command-line tool for downloading audio from various platforms (YouTube, Sound
 - **Multiple platforms support**: YouTube, SoundCloud, and many others supported by yt-dlp
 - **Audio format conversion**: Convert to MP3 with custom quality and sample rate
 - **Duplicate detection**: Skip files that already exist
-- **Progress tracking**: Real-time download progress with detailed statistics
-- **Configurable logging**: File and console logging with customizable levels
+- **Progress tracking**: Real-time download progress displayed in console
+- **Configurable logging**: File logging with customizable levels
 - **JSON configuration**: Easy configuration through JSON file
 - **Error handling**: Robust error handling with detailed error messages
+- **Single URL download**: Download a single track directly via command-line argument
 
 ## Requirements
 
 - Python 3.7+
+- yt-dlp
 - FFmpeg (required for audio conversion)
 
 ### Installing FFmpeg
@@ -50,11 +52,17 @@ pip install -r requirements.txt
 # Download audio from links.txt using default config
 python audiodownloader.py
 
+# Download a single track
+python audiodownloader.py -u "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
 # Use custom config file
 python audiodownloader.py -c my_config.json
 
-# Override paths
-python audiodownloader.py -l my_links.txt -o d:/my_music
+# Override output path
+python audiodownloader.py -o d:/my_music
+
+# Skip existing files (overrides config setting)
+python audiodownloader.py -s
 ```
 
 ### Command Line Options
@@ -62,12 +70,12 @@ python audiodownloader.py -l my_links.txt -o d:/my_music
 - `-c, --config CONFIG`: Configuration file (default: config.json)
 - `-l, --links LINKS`: Text file containing links to download (overrides config)
 - `-o, --output OUTPUT`: Destination folder for downloads (overrides config)
-- `--skip-existing`: Skip files that already exist (default)
-- `--no-skip-existing`: Download files even if they exist
+- `-u, --url URL`: Download single URL directly (ignores links.txt)
+- `-s, --skip-existing`: Skip files that already exist (overrides config setting)
 
 ### Links File Format
 
-Create a `links.txt` file with one URL per line:
+Create a `links.txt` file with one URL per line. Comments starting with `#` are ignored:
 
 ```
 # Audio links
@@ -84,13 +92,6 @@ The `config.json` file allows you to customize the downloader behavior:
 
 ```json
 {
-  "download": {
-    "format": "bestaudio/best",
-    "quiet": false,
-    "force_title": true,
-    "no_playlist": true,
-    "prefer_ffmpeg": true
-  },
   "audio": {
     "codec": "mp3",
     "quality": "320",
@@ -98,17 +99,17 @@ The `config.json` file allows you to customize the downloader behavior:
   },
   "paths": {
     "links_file": "links.txt",
-    "output_dir": "d:/mp3_yt-dlp",
+    "output_dir": "./audiodownloads",
     "log_file": "audiodownloader.log"
   },
   "behavior": {
     "skip_existing": true,
-    "update_links_file": true,
-    "progress_update_interval": 1.0
+    "progress_update_interval": 1.0,
+    "quiet_download": true
   },
   "logging": {
     "level": "INFO",
-    "console_level": "INFO",
+    "console_level": "ERROR",
     "format": "%(asctime)s - %(levelname)s - %(message)s",
     "date_format": "%Y-%m-%d %H:%M:%S"
   }
@@ -117,66 +118,24 @@ The `config.json` file allows you to customize the downloader behavior:
 
 ### Configuration Options
 
-- **download.format**: Audio format to download (default: "bestaudio/best")
 - **audio.codec**: Output audio codec (mp3, wav, etc.)
 - **audio.quality**: Audio quality/bitrate
 - **audio.sample_rate**: Audio sample rate in Hz
+- **paths.links_file**: Path to the links file
 - **paths.output_dir**: Directory for downloaded files
+- **paths.log_file**: Path to the log file
 - **behavior.skip_existing**: Skip downloads if file already exists
-- **logging.level**: Logging level (DEBUG, INFO, WARNING, ERROR)
-
-## Examples
-
-### Download from YouTube
-
-1. Add YouTube URLs to `links.txt`:
-```
-https://www.youtube.com/watch?v=dQw4w9WgXcQ
-```
-
-2. Run the downloader:
-```bash
-python audiodownloader.py
-```
-
-### Download from SoundCloud
-
-1. Add SoundCloud URLs to `links.txt`:
-```
-https://soundcloud.com/artist/track-name
-```
-
-2. Run with custom output directory:
-```bash
-python audiodownloader.py -o d:/music/soundcloud
-```
-
-### Use Custom Configuration
-
-1. Create `my_config.json`:
-```json
-{
-  "audio": {
-    "codec": "wav",
-    "quality": "lossless"
-  },
-  "paths": {
-    "output_dir": "d:/high_quality_audio"
-  }
-}
-```
-
-2. Run with custom config:
-```bash
-python audiodownloader.py -c my_config.json
-```
+- **behavior.progress_update_interval**: Interval in seconds for progress updates
+- **behavior.quiet_download**: If true, suppress most console output during download
+- **logging.level**: Logging level for file (DEBUG, INFO, WARNING, ERROR)
+- **logging.console_level**: Logging level for console (DEBUG, INFO, WARNING, ERROR)
 
 ## Output
 
 The downloader creates:
 - Audio files in the specified output directory
-- Log file (`audiodownloader.log`) with detailed information
-- Updated `links.txt` with download status comments
+- A log file (`audiodownloader.log`) with detailed information
+- Updates `links.txt` with download status comments (when not using single URL mode)
 
 ## Troubleshooting
 
@@ -206,4 +165,3 @@ This project is open source. Feel free to use and modify.
 ## Credits
 
 Built with [yt-dlp](https://github.com/yt-dlp/yt-dlp) - a fork of youtube-dl.
-

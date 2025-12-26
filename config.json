@@ -1,11 +1,4 @@
 {
-  "download": {
-    "format": "bestaudio/best",
-    "quiet": false,
-    "force_title": true,
-    "no_playlist": true,
-    "prefer_ffmpeg": true
-  },
   "audio": {
     "codec": "mp3",
     "quality": "320",
@@ -18,13 +11,14 @@
   },
   "behavior": {
     "skip_existing": true,
-    "update_links_file": true,
-    "progress_update_interval": 1.0
+    "progress_update_interval": 1.0,
+    "quiet_download": true
   },
   "logging": {
     "level": "INFO",
-    "console_level": "INFO",
+    "console_level": "ERROR",
     "format": "%(asctime)s - %(levelname)s - %(message)s",
     "date_format": "%Y-%m-%d %H:%M:%S"
   }
 }
+

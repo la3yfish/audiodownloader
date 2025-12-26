@@ -30,13 +30,6 @@ def load_config(config_file='config.json'):
 def get_default_config():
     """Return default configuration"""
     return {
-        "download": {
-            "format": "bestaudio/best",
-            "quiet": False,
-            "force_title": True,
-            "no_playlist": True,
-            "prefer_ffmpeg": True
-        },
         "audio": {
             "codec": "mp3",
             "quality": "320",
@@ -44,13 +37,13 @@ def get_default_config():
         },
         "paths": {
             "links_file": "links.txt",
-            "output_dir": "d:/mp3_yt-dlp",
+            "output_dir": "./audiodownloads",
             "log_file": "audiodownloader.log"
         },
         "behavior": {
             "skip_existing": True,
-            "update_links_file": True,
-            "progress_update_interval": 1.0
+            "progress_update_interval": 1.0,
+            "quiet_download": False
         },
         "logging": {
             "level": "INFO",
@@ -66,20 +59,23 @@ def setup_logging(config):
     log_level = getattr(logging, config['logging']['level'].upper(), logging.INFO)
     console_level = getattr(logging, config['logging']['console_level'].upper(), logging.INFO)
 
+    # Get root logger
+    logger = logging.getLogger()
+    logger.setLevel(min(log_level, console_level))  # Set to highest level between file and console
+
     # File handler
-    logging.basicConfig(
-        filename=log_file,
-        level=log_level,
-        format=config['logging']['format'],
-        datefmt=config['logging']['date_format']
-    )
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(log_level)
+    file_formatter = logging.Formatter(config['logging']['format'], config['logging']['date_format'])
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
 
     # Console handler for progress messages
     console = logging.StreamHandler()
     console.setLevel(console_level)
-    formatter = logging.Formatter('%(message)s')
-    console.setFormatter(formatter)
-    logging.getLogger('').addHandler(console)
+    console_formatter = logging.Formatter('%(message)s')
+    console.setFormatter(console_formatter)
+    logger.addHandler(console)
 
 def ensure_output_directory(path):
     """Create output directory if it doesn't exist"""
@@ -95,12 +91,12 @@ def ensure_output_directory(path):
 def create_ydl_opts(config):
     """Create yt-dlp options from configuration"""
     return {
-        'format': config['download']['format'],
+        'format': 'bestaudio/best',
         'outtmpl': os.path.join(config['paths']['output_dir'], '%(title)s.%(ext)s'),
-        'quiet': config['download']['quiet'],
-        'forcetitle': config['download']['force_title'],
-        'noplaylist': config['download']['no_playlist'],
-        'prefer_ffmpeg': config['download']['prefer_ffmpeg'],
+        'quiet': config['behavior']['quiet_download'],
+        'forcetitle': True,
+        'noplaylist': True,
+        'prefer_ffmpeg': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': config['audio']['codec'],
@@ -124,7 +120,7 @@ class DownloadProgress:
             try:
                 progress = float(d.get('_percent_str', '0%').replace('%', ''))
                 if progress - self.last_progress >= self.update_interval:
-                    logging.info(".1f")
+                    print(f"Progress: {progress:.1f}%")
                     self.last_progress = progress
             except (ValueError, KeyError):
                 pass
@@ -205,7 +201,7 @@ def download_audio(url, config):
 
                 logging.info(f"Successfully downloaded: '{title}'")
                 if duration:
-                    logging.info(".2f")
+                    logging.info(f"Duration: {duration:.2f} seconds")
                 if filesize:
                     logging.info(f"File size: {filesize / (1024*1024):.2f} MB")
                 return title
@@ -235,17 +231,17 @@ def download_audio(url, config):
 
 def main():
     """Main function to process links file"""
-    parser = argparse.ArgumentParser(description='Audio downloader from various platforms (v0.3)')
+    parser = argparse.ArgumentParser(description='Audio downloader from various platforms (v0.31)')
     parser.add_argument('-c', '--config', default='config.json',
                        help='Configuration file (default: config.json)')
     parser.add_argument('-l', '--links',
                        help='Text file containing links to download (overrides config)')
     parser.add_argument('-o', '--output',
                        help='Destination folder for downloads (overrides config)')
-    parser.add_argument('--skip-existing', action='store_true',
-                       help='Skip files that already exist (default: enabled)')
-    parser.add_argument('--no-skip-existing', action='store_true',
-                       help='Download files even if they exist')
+    parser.add_argument('-s', '--skip-existing', action='store_true',
+                       help='Skip files that already exist (overrides config setting)')
+    parser.add_argument('-u', '--url',
+                       help='Download single URL directly (ignores links.txt)')
 
     args = parser.parse_args()
 
@@ -257,16 +253,14 @@ def main():
         config['paths']['links_file'] = args.links
     if args.output:
         config['paths']['output_dir'] = args.output
-    if args.no_skip_existing:
-        config['behavior']['skip_existing'] = False
-    elif args.skip_existing:
+    if args.skip_existing:
         config['behavior']['skip_existing'] = True
 
     # Setup logging after config is loaded
     setup_logging(config)
 
     # Show configuration
-    logging.info("=== Audio Downloader v0.3 Started ===")
+    logging.info("=== Audio Downloader v0.31 Started ===")
     logging.info(f"Config file: {args.config}")
     logging.info(f"Links file: {config['paths']['links_file']}")
     logging.info(f"Output directory: {config['paths']['output_dir']}")
@@ -278,17 +272,24 @@ def main():
         logging.error("Cannot proceed without valid output directory")
         return
 
-    try:
-        with open(config['paths']['links_file'], 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-        logging.info(f"Found {len(lines)} lines in {config['paths']['links_file']}")
+    # Prepare URLs to process
+    if args.url:
+        # Single URL mode
+        lines = [args.url]
+        logging.info(f"Processing single URL: {args.url}")
+    else:
+        # Links file mode
+        try:
+            with open(config['paths']['links_file'], 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            logging.info(f"Found {len(lines)} lines in {config['paths']['links_file']}")
 
-    except FileNotFoundError:
-        logging.error(f"Links file not found: {config['paths']['links_file']}")
-        return
-    except Exception as e:
-        logging.error(f"Error reading links file {config['paths']['links_file']}: {str(e)}")
-        return
+        except FileNotFoundError:
+            logging.error(f"Links file not found: {config['paths']['links_file']}")
+            return
+        except Exception as e:
+            logging.error(f"Error reading links file {config['paths']['links_file']}: {str(e)}")
+            return
 
     processed_count = 0
     success_count = 0
@@ -316,8 +317,8 @@ def main():
             error_count += 1
             lines[i] = f'# {url} # ERROR: {title}\n'
 
-        # Update links file after each download
-        if config['behavior']['update_links_file']:
+        # Update links file after each download (only in links file mode)
+        if not args.url:
             try:
                 with open(config['paths']['links_file'], 'w', encoding='utf-8') as f:
                     f.write(''.join(lines))
@@ -330,7 +331,8 @@ def main():
     logging.info(f"Successful: {success_count}")
     logging.info(f"Skipped (existing): {skipped_count}")
     logging.info(f"Errors: {error_count}")
-    logging.info("=== Audio Downloader v0.3 Finished ===")
+    logging.info("=== Audio Downloader v0.31 Finished ===")
 
 if __name__ == '__main__':
     main()
+
